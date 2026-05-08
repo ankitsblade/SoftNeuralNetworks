@@ -44,3 +44,13 @@ loss:
 logging:
   save_dir: outputs
   save_best: true
+  wandb:
+    enabled: true
+    project: softneuralnetworks
+    entity:
+    mode: online
+    tags:
+      - cifar10h
+      - wrn28_2
+      - kl
+    watch_model: false

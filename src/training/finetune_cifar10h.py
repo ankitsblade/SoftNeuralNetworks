@@ -9,6 +9,20 @@ from src.utils.config import deep_get
 from src.visualization.data_viz import generate_data_visualizations
 
 
+def resolve_pretrained_checkpoint(config: dict) -> str | Path | None:
+    model_cfg = config.get("model", {})
+    configured = model_cfg.get("pretrained_checkpoint")
+    if configured:
+        return configured
+
+    output_dir = Path(config.get("logging", {}).get("save_dir", "outputs"))
+    experiment_name = str(config.get("experiment_name", "experiment"))
+    candidate = output_dir / "checkpoints" / f"{experiment_name}_pretrain_best.pt"
+    if candidate.exists():
+        return candidate
+    return None
+
+
 def run_finetuning(config: dict) -> Path:
     device = get_device(config.get("device", "auto"))
     dataset = config.get("dataset", {})
@@ -32,11 +46,14 @@ def run_finetuning(config: dict) -> Path:
         download=bool(dataset.get("download", True)),
         device=device,
     )
+    pretrained_checkpoint = resolve_pretrained_checkpoint(config)
+    if pretrained_checkpoint:
+        print(f"Using pretrained checkpoint: {pretrained_checkpoint}")
     model = build_model(
         backbone_name=model_cfg.get("backbone", "resnet18"),
         head_name=model_cfg.get("head", "temperature_mlp"),
         num_classes=int(model_cfg.get("num_classes", 10)),
-        pretrained_checkpoint=model_cfg.get("pretrained_checkpoint"),
+        pretrained_checkpoint=pretrained_checkpoint,
         dropout=float(model_cfg.get("dropout", 0.30)),
         wrn_dropout=float(model_cfg.get("wrn_dropout", 0.0)),
         temperature_type=deep_get(model_cfg, "temperature.type", "learnable"),

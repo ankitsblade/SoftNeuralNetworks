@@ -15,6 +15,7 @@ from src.metrics.entropy_metrics import entropy_correlations
 from src.training.early_stopping import EarlyStopping
 from src.utils.checkpoint import save_checkpoint
 from src.utils.logging import append_csv_row
+from src.utils.wandb import finish_wandb_run, init_wandb_run, log_wandb_metrics
 from src.visualization.training_curves import plot_training_curves
 
 
@@ -162,31 +163,49 @@ def train_pretrain(
     best_metric = float("inf")
     use_amp = device.type == "cuda"
     started = time.time()
+    best_epoch = 0
+    epoch = 0
+    row: dict[str, float] = {}
 
     model.to(device)
-    for epoch in range(1, epochs + 1):
-        train_loss, train_acc = run_pretrain_epoch(model, train_loader, optimizer, device, use_amp)
-        val_loss, val_acc = run_pretrain_epoch(model, val_loader, None, device, use_amp)
-        scheduler.step()
-        row = {
-            "epoch": epoch,
-            "train_loss": train_loss,
-            "train_acc": train_acc,
-            "val_loss": val_loss,
-            "val_acc": val_acc,
-            "lr": optimizer.param_groups[0]["lr"],
-            "elapsed_sec": time.time() - started,
-        }
-        append_csv_row(log_path, row)
-        print(row)
-        if val_loss < best_metric:
-            best_metric = val_loss
-            save_checkpoint(best_path, model, optimizer, scheduler, epoch, row, config)
-        if stopper.step(val_loss):
-            break
-
-    save_checkpoint(final_path, model, optimizer, scheduler, epoch, row, config)
-    plot_training_curves(log_path, output_dir / "figures" / f"{config['experiment_name']}_pretrain_curves.png")
+    wandb_run = init_wandb_run(config, stage="pretrain", model=model)
+    try:
+        for epoch in range(1, epochs + 1):
+            train_loss, train_acc = run_pretrain_epoch(model, train_loader, optimizer, device, use_amp)
+            val_loss, val_acc = run_pretrain_epoch(model, val_loader, None, device, use_amp)
+            scheduler.step()
+            row = {
+                "epoch": epoch,
+                "train_loss": train_loss,
+                "train_acc": train_acc,
+                "val_loss": val_loss,
+                "val_acc": val_acc,
+                "lr": optimizer.param_groups[0]["lr"],
+                "elapsed_sec": time.time() - started,
+            }
+            append_csv_row(log_path, row)
+            log_wandb_metrics(wandb_run, row, step=epoch)
+            print(row)
+            if val_loss < best_metric:
+                best_metric = val_loss
+                best_epoch = epoch
+                save_checkpoint(best_path, model, optimizer, scheduler, epoch, row, config)
+            if stopper.step(val_loss):
+                break
+    finally:
+        if epoch > 0 and row:
+            save_checkpoint(final_path, model, optimizer, scheduler, epoch, row, config)
+        if log_path.exists():
+            plot_training_curves(log_path, output_dir / "figures" / f"{config['experiment_name']}_pretrain_curves.png")
+        finish_wandb_run(
+            wandb_run,
+            summary={
+                "best_epoch": best_epoch,
+                "best_val_loss": best_metric,
+                "best_checkpoint": str(best_path),
+                "final_checkpoint": str(final_path),
+            },
+        )
     return best_path
 
 
@@ -224,35 +243,53 @@ def train_finetune(
     best_val_kl = float("inf")
     use_amp = device.type == "cuda"
     started = time.time()
+    best_epoch = 0
+    epoch = 0
+    row: dict[str, float] = {}
 
     model.to(device)
-    for epoch in range(1, epochs + 1):
-        train_loss, train_metrics = run_soft_epoch(model, train_loader, optimizer, device, loss_fn, use_amp)
-        val_loss, val_metrics = run_soft_epoch(model, val_loader, None, device, loss_fn, use_amp)
-        scheduler.step()
-        row = {
-            "epoch": epoch,
-            "train_loss": train_loss,
-            "val_loss": val_loss,
-            "val_kl": val_metrics["kl_mean"],
-            "val_jsd": val_metrics["jsd_mean"],
-            "val_cosine": val_metrics["cosine_mean"],
-            "val_entropy_pearson": val_metrics["entropy_pearson"],
-            "val_entropy_spearman": val_metrics["entropy_spearman"],
-            "train_kl": train_metrics["kl_mean"],
-            "lr_backbone": optimizer.param_groups[0]["lr"],
-            "lr_head": optimizer.param_groups[1]["lr"],
-            "params": count_parameters(model),
-            "elapsed_sec": time.time() - started,
-        }
-        append_csv_row(log_path, row)
-        print(row)
-        if val_metrics["kl_mean"] < best_val_kl:
-            best_val_kl = val_metrics["kl_mean"]
-            save_checkpoint(best_path, model, optimizer, scheduler, epoch, row, config)
-        if stopper.step(val_metrics["kl_mean"]):
-            break
-
-    save_checkpoint(final_path, model, optimizer, scheduler, epoch, row, config)
-    plot_training_curves(log_path, output_dir / "figures" / f"{config['experiment_name']}_finetune_curves.png")
+    wandb_run = init_wandb_run(config, stage="finetune", model=model)
+    try:
+        for epoch in range(1, epochs + 1):
+            train_loss, train_metrics = run_soft_epoch(model, train_loader, optimizer, device, loss_fn, use_amp)
+            val_loss, val_metrics = run_soft_epoch(model, val_loader, None, device, loss_fn, use_amp)
+            scheduler.step()
+            row = {
+                "epoch": epoch,
+                "train_loss": train_loss,
+                "val_loss": val_loss,
+                "val_kl": val_metrics["kl_mean"],
+                "val_jsd": val_metrics["jsd_mean"],
+                "val_cosine": val_metrics["cosine_mean"],
+                "val_entropy_pearson": val_metrics["entropy_pearson"],
+                "val_entropy_spearman": val_metrics["entropy_spearman"],
+                "train_kl": train_metrics["kl_mean"],
+                "lr_backbone": optimizer.param_groups[0]["lr"],
+                "lr_head": optimizer.param_groups[1]["lr"],
+                "params": count_parameters(model),
+                "elapsed_sec": time.time() - started,
+            }
+            append_csv_row(log_path, row)
+            log_wandb_metrics(wandb_run, row, step=epoch)
+            print(row)
+            if val_metrics["kl_mean"] < best_val_kl:
+                best_val_kl = val_metrics["kl_mean"]
+                best_epoch = epoch
+                save_checkpoint(best_path, model, optimizer, scheduler, epoch, row, config)
+            if stopper.step(val_metrics["kl_mean"]):
+                break
+    finally:
+        if epoch > 0 and row:
+            save_checkpoint(final_path, model, optimizer, scheduler, epoch, row, config)
+        if log_path.exists():
+            plot_training_curves(log_path, output_dir / "figures" / f"{config['experiment_name']}_finetune_curves.png")
+        finish_wandb_run(
+            wandb_run,
+            summary={
+                "best_epoch": best_epoch,
+                "best_val_kl": best_val_kl,
+                "best_checkpoint": str(best_path),
+                "final_checkpoint": str(final_path),
+            },
+        )
     return best_path

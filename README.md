@@ -47,6 +47,27 @@ Fine-tune on CIFAR-10H soft labels:
 UV_CACHE_DIR=/tmp/uv-cache uv run python train_finetune.py --config configs/resnet18_kl.yaml
 ```
 
+If `outputs/checkpoints/resnet18_kl_pretrain_best.pt` already exists, the fine-tuning script will pick it up automatically for the matching experiment.
+
+Weights & Biases tracking is now wired into the training loop. The default configs enable it with:
+
+```yaml
+logging:
+  wandb:
+    enabled: true
+    project: softneuralnetworks
+    entity:
+    mode: online
+```
+
+If you have not authenticated yet:
+
+```bash
+UV_CACHE_DIR=/tmp/uv-cache uv run wandb login
+```
+
+For offline or restricted-network runs, switch `logging.wandb.mode` to `offline`. To disable W&B for a run, set `logging.wandb.enabled: false`.
+
 Evaluate a checkpoint:
 
 ```bash
@@ -75,4 +96,10 @@ Run the four KL backbone experiments:
 
 ```bash
 UV_CACHE_DIR=/tmp/uv-cache uv run python run_experiments.py configs/resnet18_kl.yaml configs/wrn28_2_kl.yaml configs/densenet_bc_kl.yaml configs/vgg13_bn_kl.yaml
+```
+
+This command now runs the document's main pipeline for each config:
+
+```text
+CIFAR-10 pretraining -> CIFAR-10H fine-tuning -> test evaluation -> outputs/tables/summary.csv
 ```
