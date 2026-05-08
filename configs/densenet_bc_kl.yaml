@@ -1,0 +1,45 @@
+experiment_name: densenet_bc_kl
+seed: 42
+device: auto
+
+dataset:
+  name: cifar10h
+  root: data
+  cifar10h_path: data/cifar10h/cifar10h-probs.npy
+  train_size: 6000
+  val_size: 2000
+  test_size: 2000
+  batch_size: 128
+  num_workers: 4
+  download: true
+  pretrain_val_size: 5000
+
+model:
+  backbone: densenet_bc_40_12
+  head: temperature_mlp
+  num_classes: 10
+  dropout: 0.30
+  pretrained_checkpoint:
+  temperature:
+    type: learnable
+    init: 1.5
+
+training:
+  stage: finetune
+  epochs: 100
+  lr_backbone: 0.0001
+  lr_head: 0.0003
+  weight_decay: 0.0001
+  scheduler: cosine
+  early_stopping:
+    monitor: val_kl
+    patience: 10
+    mode: min
+
+loss:
+  name: kl
+  lambda_entropy: 0.1
+
+logging:
+  save_dir: outputs
+  save_best: true

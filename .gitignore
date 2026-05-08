@@ -1,0 +1,24 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local experiment outputs and downloaded datasets
+outputs/
+data/cifar-10-batches-py/
+data/cifar-10-python.tar.gz
+data/cifar10h/*.npy
+data/cifar10h/*.npz
+data/cifar10h/*.csv
+data/cifar10h/*.tsv
+data/cifar10h/*.txt
+
+# Tool caches
+.pytest_cache/
+.ruff_cache/
