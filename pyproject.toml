@@ -3,7 +3,7 @@ name = "cifarres"
 version = "0.1.0"
 description = "Comparative CIFAR-10H human disagreement prediction pipeline"
 readme = "README.md"
-requires-python = ">=3.11,<3.15"
+requires-python = ">=3.11,<3.14"
 dependencies = [
     "matplotlib>=3.8",
     "numpy>=1.26",

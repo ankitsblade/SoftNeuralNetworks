@@ -10,6 +10,8 @@ Use `uv` for all commands:
 UV_CACHE_DIR=/tmp/uv-cache uv sync
 ```
 
+This project currently supports Python `3.11` through `3.13`. Python `3.14` is not yet usable here because the `wandb`/`pydantic` stack in the training pipeline breaks on it.
+
 For CUDA-specific PyTorch wheels, install PyTorch with the CUDA index first, then sync the rest:
 
 ```bash
