@@ -12,7 +12,7 @@
 \usepackage{url}
 \usepackage{xcolor}
 
-\graphicspath{{outputs/figures/data/}{outputs/figures/report/}{outputs/figures/}}
+\graphicspath{{figures/}{figures/extra/}}
 
 \title{Predicting Human Annotator Disagreement on CIFAR-10H}
 
@@ -79,7 +79,7 @@ where $H(p)=-\sum_c p(c)\log_2 p(c)$ is Shannon entropy \cite{shannon1948}. The 
 Distribution fit is measured with KL divergence \cite{kullback1951}, Jensen-Shannon divergence, cosine similarity, soft cross-entropy, Brier score \cite{brier1950}, and total variation distance. Entropy quality is measured with Pearson/Spearman correlation, mean absolute error, root mean squared error, and signed bias. High-disagreement retrieval is measured with Precision@100, Precision@200, and Precision@500 after ranking images by predicted entropy. Calibration is measured by comparing the predicted top-class confidence with the human probability assigned to that same predicted class. We report bootstrap 95\% confidence intervals for headline metrics.
 
 \section{Main Results}
-\input{outputs/tables/report_main_metrics.tex}
+\input{tables/report_main_metrics.tex}
 
 \begin{figure}[!t]
 \centering
@@ -92,7 +92,7 @@ The main comparison shows that hard-label visual pretraining plus soft-label fin
 
 \section{Ablations}
 \subsection{Loss Function}
-\input{outputs/tables/report_loss_comparison.tex}
+\input{tables/report_loss_comparison.tex}
 
 \begin{figure}[!t]
 \centering
@@ -104,7 +104,7 @@ The main comparison shows that hard-label visual pretraining plus soft-label fin
 KL is asymmetric and penalizes missing human-assigned probability mass. JSD is symmetric and bounded, so it can improve symmetric distribution fit even when KL is slightly worse. The custom loss provides an explicit entropy target and is useful when ranking disagreement-prone images matters.
 
 \subsection{Prediction Head}
-\input{outputs/tables/report_head_ablation.tex}
+\input{tables/report_head_ablation.tex}
 
 \begin{figure}[!t]
 \centering
@@ -116,7 +116,7 @@ KL is asymmetric and penalizes missing human-assigned probability mass. JSD is s
 The head ablation tests whether the backbone features alone are sufficient. The ResNet18 MLP head gives the strongest overall result in the current runs, improving KL, JSD, entropy Spearman, and P@500 relative to the default temperature MLP.
 
 \subsection{Training Data Strategy}
-\input{outputs/tables/report_data_strategy.tex}
+\input{tables/report_data_strategy.tex}
 
 Training directly on the 6,000 soft-label training images from random initialization performs much worse than CIFAR-10 pretraining followed by CIFAR-10H fine-tuning. This supports the interpretation that the soft-label set is too small to learn visual representations from scratch, but it is useful for adapting pretrained representations to human uncertainty.
 
@@ -200,6 +200,6 @@ uv run python scripts/build_report_artifacts.py
 \FloatBarrier
 \clearpage
 \bibliographystyle{IEEEtran}
-\bibliography{report/references}
+\bibliography{references}
 
 \end{document}
