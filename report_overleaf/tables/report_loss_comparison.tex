@@ -1,0 +1,21 @@
+\begin{table*}[!t]
+\centering
+\caption{Loss-function ablation for ResNet18 and WRN-28-2. Brackets show bootstrap 95\% confidence intervals. Lower is better for KL/JSD/ECE; higher is better for cosine, entropy Spearman, and P@500.}
+\label{tab:loss-ablation}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllrrrrrr@{}}
+\toprule
+Experiment & Backbone & Head & Loss & KL $\downarrow$ & JSD $\downarrow$ & Cos. $\uparrow$ & $\rho_H$ $\uparrow$ & P@500 $\uparrow$ & ECE $\downarrow$ \\
+\midrule
+resnet18\_custom & resnet18 & temperature\_mlp & custom & 0.420 [0.389,0.452] & 0.093 [0.087,0.100] & 0.876 [0.864,0.887] & 0.307 [0.270,0.349] & 0.406 [0.372,0.438] & 0.047 \\
+resnet18\_jsd & resnet18 & temperature\_mlp & jsd & 0.438 [0.402,0.476] & 0.087 [0.080,0.094] & 0.883 [0.871,0.894] & 0.310 [0.272,0.350] & 0.400 [0.363,0.438] & 0.059 \\
+resnet18\_kl & resnet18 & temperature\_mlp & kl & 0.411 [0.382,0.443] & 0.094 [0.088,0.101] & 0.876 [0.865,0.887] & 0.310 [0.272,0.350] & 0.398 [0.364,0.435] & 0.030 \\
+wrn28\_2\_custom & wideresnet28\_2 & temperature\_mlp & custom & 0.452 [0.411,0.491] & 0.090 [0.083,0.097] & 0.879 [0.868,0.891] & 0.329 [0.289,0.367] & 0.430 [0.395,0.462] & 0.051 \\
+wrn28\_2\_jsd & wideresnet28\_2 & temperature\_mlp & jsd & 0.456 [0.420,0.494] & 0.092 [0.085,0.099] & 0.875 [0.863,0.886] & 0.320 [0.284,0.360] & 0.414 [0.374,0.444] & 0.056 \\
+wrn28\_2\_kl & wideresnet28\_2 & temperature\_mlp & kl & 0.429 [0.391,0.464] & 0.092 [0.085,0.099] & 0.880 [0.869,0.891] & 0.324 [0.284,0.364] & 0.420 [0.384,0.454] & 0.039 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

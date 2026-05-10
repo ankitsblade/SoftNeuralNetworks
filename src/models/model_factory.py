@@ -88,7 +88,10 @@ def build_model(
         checkpoint = torch.load(pretrained_checkpoint, map_location=map_location)
         state_dict = checkpoint.get("model_state_dict", checkpoint)
         missing, unexpected = model.load_state_dict(state_dict, strict=False)
-        if unexpected:
-            raise RuntimeError(f"Unexpected keys in checkpoint: {unexpected}")
+        non_head_unexpected = [key for key in unexpected if not key.startswith("head.")]
+        if non_head_unexpected:
+            raise RuntimeError(f"Unexpected keys in checkpoint: {non_head_unexpected}")
         print(f"Loaded checkpoint with missing keys: {missing}")
+        if unexpected:
+            print(f"Ignored incompatible head keys: {unexpected}")
     return model

@@ -1,0 +1,19 @@
+\begin{table*}[!t]
+\centering
+\caption{Main backbone comparison on the CIFAR-10H test split. Brackets show bootstrap 95\% confidence intervals. Lower is better for KL/JSD/ECE; higher is better for cosine, entropy Spearman, and P@500.}
+\label{tab:main-metrics}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllrrrrrr@{}}
+\toprule
+Experiment & Backbone & Head & Loss & KL $\downarrow$ & JSD $\downarrow$ & Cos. $\uparrow$ & $\rho_H$ $\uparrow$ & P@500 $\uparrow$ & ECE $\downarrow$ \\
+\midrule
+densenet\_bc\_kl & densenet\_bc\_40\_12 & temperature\_mlp & kl & 0.627 [0.592,0.668] & 0.150 [0.143,0.158] & 0.813 [0.801,0.825] & 0.213 [0.175,0.253] & 0.350 [0.318,0.390] & 0.034 \\
+resnet18\_kl & resnet18 & temperature\_mlp & kl & 0.411 [0.382,0.443] & 0.094 [0.088,0.101] & 0.876 [0.865,0.887] & 0.310 [0.272,0.350] & 0.398 [0.364,0.435] & 0.030 \\
+vgg13\_bn\_kl & vgg13\_bn & temperature\_mlp & kl & 0.416 [0.383,0.450] & 0.096 [0.089,0.103] & 0.876 [0.864,0.887] & 0.313 [0.277,0.354] & 0.420 [0.388,0.458] & 0.028 \\
+wrn28\_2\_kl & wideresnet28\_2 & temperature\_mlp & kl & 0.429 [0.391,0.464] & 0.092 [0.085,0.099] & 0.880 [0.869,0.891] & 0.324 [0.284,0.364] & 0.420 [0.384,0.454] & 0.039 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

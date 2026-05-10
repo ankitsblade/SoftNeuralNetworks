@@ -1,0 +1,19 @@
+\begin{table*}[!t]
+\centering
+\caption{Training-data strategy ablation. Brackets show bootstrap 95\% confidence intervals. Lower is better for KL/JSD/ECE; higher is better for cosine, entropy Spearman, and P@500.}
+\label{tab:data-strategy}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllrrrrrr@{}}
+\toprule
+Experiment & Backbone & Head & Loss & KL $\downarrow$ & JSD $\downarrow$ & Cos. $\uparrow$ & $\rho_H$ $\uparrow$ & P@500 $\uparrow$ & ECE $\downarrow$ \\
+\midrule
+resnet18\_kl & resnet18 & temperature\_mlp & kl & 0.411 [0.382,0.443] & 0.094 [0.088,0.101] & 0.876 [0.865,0.887] & 0.310 [0.272,0.350] & 0.398 [0.364,0.435] & 0.030 \\
+resnet18\_soft\_only\_kl & resnet18 & temperature\_mlp & kl & 0.964 [0.906,1.019] & 0.199 [0.189,0.207] & 0.720 [0.705,0.736] & 0.179 [0.142,0.219] & 0.340 [0.308,0.380] & 0.115 \\
+wrn28\_2\_kl & wideresnet28\_2 & temperature\_mlp & kl & 0.429 [0.391,0.464] & 0.092 [0.085,0.099] & 0.880 [0.869,0.891] & 0.324 [0.284,0.364] & 0.420 [0.384,0.454] & 0.039 \\
+wrn28\_2\_soft\_only\_kl & wideresnet28\_2 & temperature\_mlp & kl & 1.007 [0.945,1.069] & 0.205 [0.195,0.214] & 0.711 [0.695,0.728] & 0.158 [0.117,0.201] & 0.324 [0.295,0.361] & 0.114 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}

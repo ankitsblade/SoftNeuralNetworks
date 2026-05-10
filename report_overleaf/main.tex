@@ -1,0 +1,205 @@
+\documentclass[10pt,conference]{IEEEtran}
+
+\IEEEoverridecommandlockouts
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{booktabs}
+\usepackage{graphicx}
+\usepackage{microtype}
+\usepackage{placeins}
+\usepackage{stfloats}
+\usepackage{url}
+\usepackage{xcolor}
+
+\graphicspath{{figures/}{figures/extra/}}
+
+\title{Predicting Human Annotator Disagreement on CIFAR-10H}
+
+\author{
+\IEEEauthorblockN{Saiankit Shankar, Sushan Govardhanam, Pranav Reddy Mitta, Nitin Riyala}
+\IEEEauthorblockA{Soft Neural Networks Project}
+}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+Standard image classifiers collapse annotation variability into a single hard label. CIFAR-10H makes it possible to model the full distribution of human responses for each image instead. We train CIFAR-adapted convolutional networks to predict these soft human label distributions and evaluate them with distributional, uncertainty-ranking, calibration, robustness, and qualitative diagnostics. The final study compares ResNet18, WideResNet-28-2, DenseNet-BC-40-12, and VGG-13-BN, then ablates loss functions, prediction heads, and the value of CIFAR-10 pretraining before CIFAR-10H soft-label fine-tuning.
+\end{abstract}
+
+\section{Introduction}
+Human annotators disagree for meaningful reasons: images can be low resolution, occluded, visually ambiguous, or close to semantic boundaries between classes. A majority-vote target discards this uncertainty. CIFAR-10H provides empirical human response distributions for the CIFAR-10 test images, making it possible to predict not only the most likely class but also the pattern and magnitude of human disagreement \cite{peterson2019cifar10h,krizhevsky2009cifar}.
+
+We model each target as a probability vector $p_{\mathrm{hum}}(y\mid x)\in\Delta^{9}$ and train a neural network to output $q_\theta(y\mid x)$. The central question is whether standard CIFAR CNN backbones can learn human-like uncertainty rather than only hard-label accuracy. We therefore evaluate distribution fit, entropy agreement, high-disagreement retrieval, calibration, robustness to synthetic corruptions, and qualitative explanations.
+
+\section{Data and Task}
+CIFAR-10H contains one soft label distribution for each of the 10,000 CIFAR-10 test images. We use a fixed 6,000/2,000/2,000 train/validation/test split with seed 42. CIFAR-10 training images are used only for hard-label pretraining; they are not used as soft-label targets.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{entropy_histogram.png}
+\caption{True Shannon entropy over CIFAR-10H labels. Most images have a clear majority class, but the right tail contains the ambiguous examples that define the disagreement-prediction problem.}
+\label{fig:entropy-hist}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{annotator_confusion_matrix.png}
+\caption{Aggregated human label mass by CIFAR-10 majority class. Rows are majority classes and columns are human response classes; off-diagonal mass shows systematic confusions rather than random noise.}
+\label{fig:confusion}
+\end{figure}
+
+\section{Method}
+\subsection{Architectures}
+We compare CIFAR-ResNet18 \cite{he2016resnet}, WideResNet-28-2 \cite{zagoruyko2016wrn}, DenseNet-BC-40-12 \cite{huang2017densenet}, and VGG-13-BN \cite{simonyan2015vgg}. ResNet18 uses a CIFAR stem with a $3\times3$ stride-1 convolution and no ImageNet-style max-pooling. WRN-28-2 tests whether a compact wide residual model is sufficient for disagreement modeling, DenseNet tests parameter-efficient feature reuse, and VGG provides a plain convolutional baseline.
+
+\begin{figure*}[!t]
+\centering
+\includegraphics[width=0.86\textwidth]{architecture_diagram.png}
+\caption{Training and evaluation pipeline. A CIFAR image is encoded by a backbone, mapped through a distribution head, and optimized to match the 10-way human response distribution instead of a one-hot class label.}
+\label{fig:architecture}
+\end{figure*}
+
+\subsection{Prediction Head and Training}
+The default head is a 256-unit MLP with batch normalization, ReLU, dropout, and a learnable temperature-scaled softmax. Temperature scaling is included because modern neural networks are often miscalibrated, and a scalar temperature can improve probabilistic calibration \cite{guo2017calibration}. All models use AdamW \cite{kingma2015adam,loshchilov2019adamw}, cosine learning-rate scheduling, early stopping on validation KL, and light CIFAR-safe augmentation. The main training strategy is CIFAR-10 hard-label pretraining followed by CIFAR-10H soft-label fine-tuning.
+
+\subsection{Losses}
+The primary objective is KL divergence:
+\begin{equation}
+\mathcal{L}_{KL}=\frac{1}{N}\sum_i\sum_c p_i(c)\log\frac{p_i(c)}{q_i(c)}.
+\end{equation}
+We also compare Jensen-Shannon divergence \cite{lin1991jsd} and a composite entropy-aware objective:
+\begin{equation}
+\mathcal{L}_{custom}=KL(p\Vert q)+\lambda\left(H(p)-H(q)\right)^2,
+\end{equation}
+where $H(p)=-\sum_c p(c)\log_2 p(c)$ is Shannon entropy \cite{shannon1948}. The custom term penalizes disagreement-magnitude errors directly.
+
+\section{Evaluation Metrics}
+Distribution fit is measured with KL divergence \cite{kullback1951}, Jensen-Shannon divergence, cosine similarity, soft cross-entropy, Brier score \cite{brier1950}, and total variation distance. Entropy quality is measured with Pearson/Spearman correlation, mean absolute error, root mean squared error, and signed bias. High-disagreement retrieval is measured with Precision@100, Precision@200, and Precision@500 after ranking images by predicted entropy. Calibration is measured by comparing the predicted top-class confidence with the human probability assigned to that same predicted class. We report bootstrap 95\% confidence intervals for headline metrics.
+
+\section{Main Results}
+\input{tables/report_main_metrics.tex}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{main_backbone_metrics.png}
+\caption{Backbone comparison under KL fine-tuning. ResNet18 gives the best KL among the default heads, while WRN-28-2 is competitive on JSD, cosine similarity, and entropy ranking with far fewer parameters.}
+\label{fig:main-backbones}
+\end{figure}
+
+The main comparison shows that hard-label visual pretraining plus soft-label fine-tuning is effective across architectures. KL and JSD do not always select the same model: KL rewards matching all human-assigned mass, while JSD is bounded and more symmetric. Because the project goal is disagreement prediction, entropy Spearman and Precision@K are important alongside divergence values.
+
+\section{Ablations}
+\subsection{Loss Function}
+\input{tables/report_loss_comparison.tex}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{loss_comparison_jsd.png}
+\caption{Loss ablation evaluated with JSD. JSD training improves JSD for ResNet18, while the custom entropy-aware loss is competitive for WRN-28-2 and improves high-disagreement retrieval.}
+\label{fig:loss-comparison}
+\end{figure}
+
+KL is asymmetric and penalizes missing human-assigned probability mass. JSD is symmetric and bounded, so it can improve symmetric distribution fit even when KL is slightly worse. The custom loss provides an explicit entropy target and is useful when ranking disagreement-prone images matters.
+
+\subsection{Prediction Head}
+\input{tables/report_head_ablation.tex}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{head_ablation_entropy_mae.png}
+\caption{Prediction-head ablation using entropy MAE. Additional head capacity helps ResNet18 substantially; WRN-28-2 is more sensitive to the exact head and performs poorly with only a linear head.}
+\label{fig:head-ablation}
+\end{figure}
+
+The head ablation tests whether the backbone features alone are sufficient. The ResNet18 MLP head gives the strongest overall result in the current runs, improving KL, JSD, entropy Spearman, and P@500 relative to the default temperature MLP.
+
+\subsection{Training Data Strategy}
+\input{tables/report_data_strategy.tex}
+
+Training directly on the 6,000 soft-label training images from random initialization performs much worse than CIFAR-10 pretraining followed by CIFAR-10H fine-tuning. This supports the interpretation that the soft-label set is too small to learn visual representations from scratch, but it is useful for adapting pretrained representations to human uncertainty.
+
+\section{Robustness and Class Analysis}
+Robustness is tested with Gaussian noise, Gaussian blur, and contrast reduction. The purpose is not to claim corruption robustness in the CIFAR-10-C sense, but to check whether predicted entropy responds sensibly when image quality is degraded.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{corruption_response_wrn28_2_kl.png}
+\caption{Corruption response for the selected WRN-28-2 KL model. Mean predicted entropy should rise as visual evidence degrades; deviations indicate calibration or uncertainty-estimation failure modes.}
+\label{fig:corruption}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{class_conditional_wrn28_2_kl.png}
+\caption{Class-conditional entropy MAE for WRN-28-2. Class-level variation indicates that human disagreement is easier to predict for some visual categories than others.}
+\label{fig:class-conditional}
+\end{figure}
+
+\section{Explainability and Failure Analysis}
+Grad-CAM \cite{selvaraju2017gradcam} is used as a qualitative diagnostic, not as causal evidence. It helps check whether the model attends to object regions, background context, or ambiguous local textures when predicting high or low disagreement.
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{gradcam_wrn28_2_kl.png}
+\caption{Grad-CAM examples across low-, medium-, and high-disagreement images for WRN-28-2. The grid helps diagnose whether uncertainty is associated with object evidence, background cues, or diffuse attention.}
+\label{fig:gradcam}
+\end{figure}
+
+\section{Discussion and Limitations}
+This task is different from ordinary classification: a model can predict the majority class correctly while still assigning the wrong uncertainty profile. For that reason, majority top-1 accuracy is only a sanity check; KL/JSD, entropy error, entropy ranking, and calibration are the central metrics.
+
+The study has three main limitations. First, CIFAR-10H contains only 10,000 soft-label targets, so results may vary with split seed and initialization. Second, the human distributions are empirical estimates and contain sampling noise. Third, annotator subsampling is not included because the default data available in this repository contains probability vectors rather than raw annotator-level labels.
+
+We do not include EMD/Wasserstein distance as a required metric because CIFAR-10 classes have no canonical geometric ordering. A class-distance matrix would need independent justification; otherwise EMD would introduce arbitrary assumptions.
+
+\section{Conclusion}
+We built a reproducible CIFAR-10H pipeline for predicting full human label distributions. The results show that pretrained CNNs can model human uncertainty substantially better than soft-label-only training from scratch, and that the best model depends on whether the priority is KL, JSD, entropy ranking, or calibration. The current strongest run is ResNet18 with an MLP head, while WRN-28-2 remains an attractive compact model with competitive disagreement-specific behavior.
+
+\FloatBarrier
+\clearpage
+\appendices
+
+\section{Additional Diagnostics and Qualitative Artifacts}
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{per_class_entropy.png}
+\caption{Per-class human entropy distribution. This diagnostic motivates class-conditional evaluation because ambiguity is not evenly distributed across CIFAR-10 categories.}
+\label{fig:per-class-entropy}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{entropy_examples.png}
+\caption{Representative low-, medium-, and high-entropy CIFAR-10H examples used to sanity-check the interpretation of entropy as human disagreement.}
+\label{fig:entropy-examples}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{failure_cases_wrn28_2_kl.png}
+\caption{Largest entropy-error failure cases for WRN-28-2. These examples separate overconfident predictions from cases where the model predicts more uncertainty than humans expressed.}
+\label{fig:failures}
+\end{figure}
+
+\begin{figure}[!t]
+\centering
+\includegraphics[width=\linewidth]{manual_disagreement_source_sheet.png}
+\caption{High-entropy images selected for manual disagreement-source categorization. Suggested categories include ambiguous object identity, poor image quality, multi-object scenes, class-boundary cases, occlusion, and background confusion.}
+\label{fig:manual-sheet}
+\end{figure}
+
+\section{Reproducibility Notes}
+All report tables are generated from saved checkpoint evaluations. The source CSV/JSON files are exported with the Overleaf package under \texttt{data\_tables/}. The LaTeX table snippets are generated in the repository under \texttt{outputs/tables/} and copied into the Overleaf export under \texttt{tables/}. The key command sequence is:
+\begin{verbatim}
+uv run python scripts/evaluate_report_configs.py
+uv run python scripts/build_report_artifacts.py
+\end{verbatim}
+
+\FloatBarrier
+\clearpage
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

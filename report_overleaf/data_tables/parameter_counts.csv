@@ -1,0 +1,5 @@
+experiment_name,backbone,head,params
+densenet_bc_kl,densenet_bc_40_12,temperature_mlp,211923
+resnet18_kl,resnet18,temperature_mlp,11303243
+vgg13_bn_kl,vgg13_bn,temperature_mlp,9542347
+wrn28_2_kl,wideresnet28_2,temperature_mlp,1502427

@@ -24,3 +24,14 @@ def entropy_correlations(predicted: torch.Tensor, target: torch.Tensor) -> dict[
         "entropy_pearson": float(np.nan_to_num(pearson)),
         "entropy_spearman": float(np.nan_to_num(spearman)),
     }
+
+
+def entropy_error_metrics(predicted: torch.Tensor, target: torch.Tensor) -> dict[str, float]:
+    pred_entropy = entropy_bits_tensor(predicted)
+    true_entropy = entropy_bits_tensor(target)
+    error = pred_entropy - true_entropy
+    return {
+        "entropy_mae": float(torch.mean(torch.abs(error)).item()),
+        "entropy_rmse": float(torch.sqrt(torch.mean(error.pow(2))).item()),
+        "entropy_bias": float(torch.mean(error).item()),
+    }

@@ -1,0 +1,21 @@
+\begin{table*}[!t]
+\centering
+\caption{Prediction-head ablation with KL fine-tuning. Brackets show bootstrap 95\% confidence intervals. Lower is better for KL/JSD/ECE; higher is better for cosine, entropy Spearman, and P@500.}
+\label{tab:head-ablation}
+\scriptsize
+\setlength{\tabcolsep}{3pt}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llllrrrrrr@{}}
+\toprule
+Experiment & Backbone & Head & Loss & KL $\downarrow$ & JSD $\downarrow$ & Cos. $\uparrow$ & $\rho_H$ $\uparrow$ & P@500 $\uparrow$ & ECE $\downarrow$ \\
+\midrule
+resnet18\_linear\_kl & resnet18 & linear & kl & 0.422 [0.386,0.458] & 0.087 [0.081,0.093] & 0.883 [0.872,0.893] & 0.321 [0.285,0.360] & 0.418 [0.376,0.450] & 0.047 \\
+resnet18\_mlp\_kl & resnet18 & mlp & kl & 0.390 [0.357,0.422] & 0.083 [0.077,0.088] & 0.889 [0.879,0.899] & 0.357 [0.318,0.393] & 0.452 [0.418,0.488] & 0.047 \\
+resnet18\_kl & resnet18 & temperature\_mlp & kl & 0.411 [0.382,0.443] & 0.094 [0.088,0.101] & 0.876 [0.865,0.887] & 0.310 [0.272,0.350] & 0.398 [0.364,0.435] & 0.030 \\
+wrn28\_2\_linear\_kl & wideresnet28\_2 & linear & kl & 0.635 [0.579,0.689] & 0.123 [0.114,0.131] & 0.827 [0.813,0.842] & 0.255 [0.215,0.299] & 0.382 [0.338,0.412] & 0.090 \\
+wrn28\_2\_mlp\_kl & wideresnet28\_2 & mlp & kl & 0.470 [0.431,0.510] & 0.093 [0.087,0.100] & 0.873 [0.862,0.884] & 0.332 [0.296,0.372] & 0.424 [0.384,0.459] & 0.049 \\
+wrn28\_2\_kl & wideresnet28\_2 & temperature\_mlp & kl & 0.429 [0.391,0.464] & 0.092 [0.085,0.099] & 0.880 [0.869,0.891] & 0.324 [0.284,0.364] & 0.420 [0.384,0.454] & 0.039 \\
+\bottomrule
+\end{tabular}%
+}
+\end{table*}
